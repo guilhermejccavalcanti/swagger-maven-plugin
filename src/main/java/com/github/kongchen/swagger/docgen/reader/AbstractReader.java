@@ -32,7 +32,6 @@ import io.swagger.models.properties.Property;
 import io.swagger.models.properties.RefProperty;
 import io.swagger.models.properties.StringProperty;
 import io.swagger.models.RefModel;
-
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
 import java.lang.reflect.ParameterizedType;
@@ -62,26 +61,29 @@ import org.springframework.web.bind.annotation.PathVariable;
  * Created by chekong on 15/4/28.
  */
 public abstract class AbstractReader {
+
     protected final LogAdapter LOG;
+
     protected Swagger swagger;
+
     protected Set<Type> typesToSkip = new HashSet<Type>();
 
     public Set<Type> getTypesToSkip() {
         return typesToSkip;
     }
-    
+
     public void setTypesToSkip(List<Type> typesToSkip) {
         this.typesToSkip = new HashSet<Type>(typesToSkip);
     }
-    
+
     public void setTypesToSkip(Set<Type> typesToSkip) {
         this.typesToSkip = typesToSkip;
     }
-    
+
     public void addTypeToSkippedTypes(Type type) {
         this.typesToSkip.add(type);
     }
-       
+
     public AbstractReader(Swagger swagger, LogAdapter LOG) {
         this.swagger = swagger;
         this.LOG = LOG;
@@ -106,7 +108,6 @@ public abstract class AbstractReader {
         String consumes = api.consumes();
         String schems = api.protocols();
         Authorization[] authorizations = api.authorizations();
-
         List<SecurityRequirement> securities = new ArrayList<SecurityRequirement>();
         for (Authorization auth : authorizations) {
             if (auth.value() != null && !"".equals(auth.value())) {
@@ -127,8 +128,6 @@ public abstract class AbstractReader {
     protected String parseOperationPath(String operationPath, Map<String, String> regexMap) {
         String[] pps = operationPath.split("/");
         String[] pathParts = new String[pps.length];
-
-
         for (int i = 0; i < pps.length; i++) {
             String p = pps[i];
             if (p.startsWith("{")) {
@@ -138,14 +137,18 @@ public abstract class AbstractReader {
                     String right = p.substring(pos + 1, p.length() - 1);
                     pathParts[i] = "{" + left.trim() + "}";
                     regexMap.put(left.trim(), right);
-                } else
+                } else {
                     pathParts[i] = p;
-            } else pathParts[i] = p;
+                }
+            } else {
+                pathParts[i] = p;
+            }
         }
         StringBuilder pathBuilder = new StringBuilder();
         for (String p : pathParts) {
-            if (!p.isEmpty())
+            if (!p.isEmpty()) {
                 pathBuilder.append("/").append(p);
+            }
         }
         operationPath = pathBuilder.toString();
         return operationPath;
@@ -171,22 +174,25 @@ public abstract class AbstractReader {
             for (ResponseHeader header : headers) {
                 String name = header.name();
                 if (!"".equals(name)) {
-                    if (responseHeaders == null)
+                    if (responseHeaders == null) {
                         responseHeaders = new HashMap<String, Property>();
+                    }
                     String description = header.description();
                     Class<?> cls = header.response();
                     String container = header.responseContainer();
-
                     if (!cls.equals(Void.class) && !"void".equals(cls.toString())) {
                         Property responseProperty = null;
                         Property property = ModelConverters.getInstance().readAsProperty(cls);
                         if (property != null) {
-                            if ("list".equalsIgnoreCase(container))
+                            if ("list".equalsIgnoreCase(container)) {
                                 responseProperty = new ArrayProperty(property);
-                            else if ("map".equalsIgnoreCase(container))
-                                responseProperty = new MapProperty(property);
-                            else
-                                responseProperty = property;
+                            } else {
+                                if ("map".equalsIgnoreCase(container)) {
+                                    responseProperty = new MapProperty(property);
+                                } else {
+                                    responseProperty = property;
+                                }
+                            }
                             responseProperty.setDescription(description);
                             responseHeaders.put(name, responseProperty);
                         }
@@ -196,7 +202,6 @@ public abstract class AbstractReader {
         }
         return responseHeaders;
     }
-
 
     protected void updatePath(String operationPath, String httpMethod, Operation operation) {
         if (httpMethod == null) {
@@ -228,7 +233,6 @@ public abstract class AbstractReader {
 
     protected Set<String> extractTags(Api api) {
         Set<String> output = new LinkedHashSet<String>();
-
         boolean hasExplicitTags = false;
         for (String tag : api.tags()) {
             if (!"".equals(tag)) {
@@ -237,10 +241,10 @@ public abstract class AbstractReader {
             }
         }
         if (!hasExplicitTags) {
-            // derive tag from api path + description
             String tagString = api.value().replace("/", "");
-            if (!"".equals(tagString))
+            if (!"".equals(tagString)) {
                 output.add(tagString);
+            }
         }
         return output;
     }
@@ -251,22 +255,23 @@ public abstract class AbstractReader {
             String[] parts = protocols.split(",");
             for (String part : parts) {
                 String trimmed = part.trim();
-                if (!"".equals(trimmed))
+                if (!"".equals(trimmed)) {
                     operation.scheme(Scheme.forValue(trimmed));
+                }
             }
         }
     }
 
     protected Map<String, Tag> updateTagsForApi(Map<String, Tag> parentTags, Api api) {
-        // the value will be used as a tag for 2.0 UNLESS a Tags annotation is present
         Set<String> tagStrings = extractTags(api);
         Map<String, Tag> tags = new HashMap<String, Tag>();
         for (String tagString : tagStrings) {
             Tag tag = new Tag().name(tagString);
             tags.put(tagString, tag);
         }
-        if (parentTags != null)
+        if (parentTags != null) {
             tags.putAll(parentTags);
+        }
         for (String tagName : tags.keySet()) {
             swagger.tag(tags.get(tagName));
         }
@@ -275,22 +280,34 @@ public abstract class AbstractReader {
 
     boolean isPrimitive(Class<?> cls) {
         boolean out = false;
-
         Property property = ModelConverters.getInstance().readAsProperty(cls);
-        if (property == null)
+        if (property == null) {
             out = false;
-        else if ("integer".equals(property.getType()))
-            out = true;
-        else if ("string".equals(property.getType()))
-            out = true;
-        else if ("number".equals(property.getType()))
-            out = true;
-        else if ("boolean".equals(property.getType()))
-            out = true;
-        else if ("array".equals(property.getType()))
-            out = true;
-        else if ("file".equals(property.getType()))
-            out = true;
+        } else {
+            if ("integer".equals(property.getType())) {
+                out = true;
+            } else {
+                if ("string".equals(property.getType())) {
+                    out = true;
+                } else {
+                    if ("number".equals(property.getType())) {
+                        out = true;
+                    } else {
+                        if ("boolean".equals(property.getType())) {
+                            out = true;
+                        } else {
+                            if ("array".equals(property.getType())) {
+                                out = true;
+                            } else {
+                                if ("file".equals(property.getType())) {
+                                    out = true;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
         return out;
     }
 
@@ -308,7 +325,6 @@ public abstract class AbstractReader {
                 operation.produces(mediaType);
             }
         }
-
         if (operation.getTags() == null) {
             for (String tagString : tags.keySet()) {
                 operation.tag(tagString);
@@ -318,18 +334,11 @@ public abstract class AbstractReader {
             operation.security(security);
         }
     }
-    
+
     private boolean hasValidAnnotations(List<Annotation> parameterAnnotations) {
-        // Because method parameters can contain parameters that are valid, but 
-        // not part of the API contract, first check to make sure the parameter 
-        // has at lease one annotation before processing it.  Also, check a 
-        // whitelist to make sure that the annotation of the parameter is 
-        // compatible with spring-maven-plugin 
-        
         if (parameterAnnotations.isEmpty()) {
             return false;
         }
-
         List<Type> validParameterAnnotations = new ArrayList<Type>();
         validParameterAnnotations.add(ModelAttribute.class);
         validParameterAnnotations.add(BeanParam.class);
@@ -342,7 +351,6 @@ public abstract class AbstractReader {
         validParameterAnnotations.add(RequestParam.class);
         validParameterAnnotations.add(RequestBody.class);
         validParameterAnnotations.add(PathVariable.class);
-
         boolean hasValidAnnotation = false;
         for (Annotation potentialAnnotation : parameterAnnotations) {
             if (validParameterAnnotations.contains(potentialAnnotation.annotationType())) {
@@ -350,33 +358,27 @@ public abstract class AbstractReader {
                 break;
             }
         }
-
         return hasValidAnnotation;
     }
-    
+
     protected List<Parameter> getParameters(Type type, List<Annotation> annotations) {
-                
         if (hasValidAnnotations(annotations) == false) {
             return new ArrayList<Parameter>();
         }
-        
         Iterator<SwaggerExtension> chain = SwaggerExtensions.chain();
         List<Parameter> parameters = new ArrayList<Parameter>();
         Class<?> cls = TypeUtils.getRawType(type, type);
         LOG.info("Looking for path/query/header/form/cookie params in " + cls);
-        
         if (chain.hasNext()) {
             SwaggerExtension extension = chain.next();
             LOG.info("trying extension " + extension);
             parameters = extension.extractParameters(annotations, type, typesToSkip, chain);
         }
-
         if (parameters.size() > 0) {
             for (Parameter parameter : parameters) {
                 ParameterProcessor.applyAnnotations(swagger, parameter, type, annotations);
             }
         } else {
-            // look for body parameters
             LOG.info("Looking for body params in " + cls);
             if (typesToSkip.contains(type) == false) {
                 Parameter param = ParameterProcessor.applyAnnotations(swagger, null, type, annotations);
@@ -392,11 +394,8 @@ public abstract class AbstractReader {
         Class<?> responseClass;
         for (ApiResponse apiResponse : responseAnnotation.value()) {
             Map<String, Property> responseHeaders = parseResponseHeaders(apiResponse.responseHeaders());
-            responseClass = apiResponse.response();  
-            Response response = new Response()
-                    .description(apiResponse.message())
-                    .headers(responseHeaders);
-            
+            responseClass = apiResponse.response();
+            Response response = new Response().description(apiResponse.message()).headers(responseHeaders);
             if (responseClass == null || responseClass.equals(Void.class)) {
                 if (operation.getResponses() != null && !operation.getResponses().isEmpty()) {
                     Response apiOperationResponse = operation.getResponses().get(String.valueOf(apiResponse.code()));
@@ -405,12 +404,11 @@ public abstract class AbstractReader {
                     }
                 }
             }
-            
-            if (apiResponse.code() == 0)
+            if (apiResponse.code() == 0) {
                 operation.defaultResponse(response);
-            else
+            } else {
                 operation.response(apiResponse.code(), response);
-            
+            }
             if (responseClass != null && !responseClass.equals(Void.class)) {
                 Map<String, Model> models = ModelConverters.getInstance().read(responseClass);
                 for (String key : models.keySet()) {
@@ -421,46 +419,44 @@ public abstract class AbstractReader {
                 for (String key : models.keySet()) {
                     swagger.model(key, models.get(key));
                 }
-            } 
+            }
         }
     }
 
     protected String[] updateOperationProduces(String[] parentProduces, String[] apiProduces, Operation operation) {
-
         if (parentProduces != null) {
             Set<String> both = new HashSet<String>(Arrays.asList(apiProduces));
             both.addAll(new HashSet<String>(Arrays.asList(parentProduces)));
-            if (operation.getProduces() != null)
+            if (operation.getProduces() != null) {
                 both.addAll(new HashSet<String>(operation.getProduces()));
+            }
             apiProduces = both.toArray(new String[both.size()]);
         }
         return apiProduces;
     }
 
     protected String[] updateOperationConsumes(String[] parentConsumes, String[] apiConsumes, Operation operation) {
-
         if (parentConsumes != null) {
             Set<String> both = new HashSet<String>(Arrays.asList(apiConsumes));
             both.addAll(new HashSet<String>(Arrays.asList(parentConsumes)));
-            if (operation.getConsumes() != null)
+            if (operation.getConsumes() != null) {
                 both.addAll(new HashSet<String>(operation.getConsumes()));
+            }
             apiConsumes = both.toArray(new String[both.size()]);
         }
         return apiConsumes;
     }
 
-        protected void readImplicitParameters(Method method, Operation operation) {
+    protected void readImplicitParameters(Method method, Operation operation) {
         ApiImplicitParams implicitParams = method.getAnnotation(ApiImplicitParams.class);
         if (implicitParams != null && implicitParams.value().length > 0) {
             for (ApiImplicitParam param : implicitParams.value()) {
-                
                 Class<?> cls = null;
                 try {
                     cls = Class.forName(param.dataType());
                 } catch (ClassNotFoundException e) {
                     cls = method.getDeclaringClass();
-                }               
-                
+                }
                 Parameter p = readImplicitParam(param, cls);
                 if (p != null) {
                     operation.addParameter(p);
@@ -473,20 +469,25 @@ public abstract class AbstractReader {
         Parameter p;
         if (param.paramType().equalsIgnoreCase("path")) {
             p = new PathParameter();
-        } else if (param.paramType().equalsIgnoreCase("query")) {
-            p = new QueryParameter();
-        } else if (param.paramType().equalsIgnoreCase("form") || param.paramType().equalsIgnoreCase("formData")) {
-            p = new FormParameter();
-        } else if (param.paramType().equalsIgnoreCase("body")) {
-            p = new BodyParameter();
-        } else if (param.paramType().equalsIgnoreCase("header")) {
-            p = new HeaderParameter();
         } else {
-            return null;
+            if (param.paramType().equalsIgnoreCase("query")) {
+                p = new QueryParameter();
+            } else {
+                if (param.paramType().equalsIgnoreCase("form") || param.paramType().equalsIgnoreCase("formData")) {
+                    p = new FormParameter();
+                } else {
+                    if (param.paramType().equalsIgnoreCase("body")) {
+                        p = new BodyParameter();
+                    } else {
+                        if (param.paramType().equalsIgnoreCase("header")) {
+                            p = new HeaderParameter();
+                        } else {
+                            return null;
+                        }
+                    }
+                }
+            }
         }
-
-        return ParameterProcessor.applyAnnotations(swagger, p, apiClass, Arrays.asList(new Annotation[]{param}));
+        return ParameterProcessor.applyAnnotations(swagger, p, apiClass, Arrays.asList(new Annotation[] { param }));
     }
-    
 }
-
